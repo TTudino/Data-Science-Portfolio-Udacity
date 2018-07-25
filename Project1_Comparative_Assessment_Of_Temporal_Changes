@@ -1,0 +1,131 @@
+Project1. Comparative assessment of temporal changes in urban and global temperatures between 1750 and 2010
+
+1	Used tools, data extraction, and applied equations
+    
+    1.1	Used tools
+Overall, data analyses follow four steps. After (1) defining the research question, it is essential to (2) identify the best possible data 
+that can be used to answer it. Then, softwares are used to (3) explore the data, at least preliminary, and hence decide the required 
+approaches and analyses. An appropriate tool is finally used to (4) investigate the data and summarize them with appropriate graphs.
+Here, I use the Structured Query Language (SQL), freely downloadable Panoply (Schmunk, 1993), and MATLAB R2014b for the last three steps 
+respectively. SQL is versatile and used in the project to extract Temperature (T) observations from the Udacity repository, as detailed 
+in section 1.2. Panoply allows exploring netcdf data in a relatively quick but informative way (section 1.2). MATLAB is chosen over 
+analogous software (e.g. Python) owing to the higher experience on its use.
+
+    1.2	Data extraction
+Two steps are followed to extract the data sets necessary for this project. Initially, I extract yearly averaged T observations for several 
+cities and at the scale of the globe by using a SQL query. Then, I download monthly averaged T data from the National Oceanic and 
+Atmospheric Administration (NOAA, 2018) website. To extract the yearly mean T data, I write the following SQL queries:
+
+SELECT city, year, avg_temp FROM city_data
+WHERE (city = 'Rome' AND country = 'Italy') OR (city = 'London' AND country = 'United Kingdom') OR (city = 'Brisbane' AND country = 
+'Australia') OR (city = 'San Diego' AND country = 'United States');
+
+and…
+
+SELECT year, avg_temp FROM global_data;
+
+Both queries are applied to the data given by the Udacity team and the resulting CSV (Comma Separated Values) files investigated using 
+MATLAB. For the London and Rome data sets, all of the data measured before 1750 are removed. They are discontinuous and comparative values 
+are not available at global scale for the analyzed period. Furthermore, I stop every data set to 2010: year on which most of them terminate. 
+The rationale behind the choice of four cities and comparison to global values is explored later in this document.
+Although yearly averaged T data are informative on the temporal variations, they are uninformative on the spatial distribution unless taken 
+for each available city. So to avoid this computationally expensive challenge, I download global monthly data of surface temperature for 
+the globe (NOAA, 2018). These data are explored initially by using Panoply, which highlights an interval of time included between January 
+1851 and December 2014 and an overall T increase in time. Then, the first and 2010 twelve months are extracted using the MATLAB command 
+ncread and averaged, obtaining yearly mean T data at global scale for those years. The first year is chosen as it links to the beginning 
+of the industrial revolution, while 2010 is chosen as most of the data extracted using SQL ended in this year.
+
+    1.3	Applied equations
+As anticipated in section 1.2, this project explores yearly mean T data at different scales. However, those data are influenced by 
+significant variability among years that may alter the results and render difficult their interpretation. Therefore, I filter the values by 
+using a moving average on five-years intervals, then studying variations from 1890 to 2010 and the short-term variability of each curve.
+
+Moving averages. A moving average filter may be used to smooth the variability of a time series. This technique replaces each datum by the 
+averaged between it and one or more previous values in the same set. Here, I use a five-years interval, which improves the studied data 
+without loosing a significant fraction of the short-term information.
+
+μ_{i-a,i} = (x_{i-a} + x_{i-a+1} + … + x_i) / a	                                                                                        (1)
+
+where μ is the mean, a is equal to 5, and i varies from 1 to the data set length. 
+
+Variations in time. Overall, a time series is investigated by separating the signal between long-term (decades) and short-term (years) 
+variability. Here, I describe the former, while the latter is detailed in the following paragraph.
+In this project, I estimate and present the time series long-term variations fitting least mean squares linear regressions to the given T 
+data for each city and at the scale of the globe. The results are then forced through zero by removing the first value from each set of 
+data, hence being comparable. Dividing the long-term variations by the interval of time considered is possible to calculate the trends. 
+
+Variability. Although the short-term variability is often filtered in a time series analysis, this could stores relevant information that 
+should be investigated. So to account for it, I calculate the variability of each time series by using Eq.2.
+
+σ_i = x_i – Δ_i	                                                                                                                        (2)
+
+2	Study rationales
+Since the beginning of the industrial revolution (~1851), human activities have increased the atmospheric carbon dioxide (CO2) mole 
+fraction from 278 ppm to over 400 ppm (Dlugokencky et al., 2017). This has exacerbated the Greenhouse effect; being suggested as the main 
+cause of recent climate change and increasing the global mean Temperature (T; Solomon et al., 2007).
+The process is not homogeneous over space, being influenced by wind stress, land coverage percentage, and other forcing variables. Fig 1 
+summarizes the thermal changes at the scale of the globe between 1851 and 2010.
+Overall, T increases everywhere, owing to the increasing CO2 in the atmosphere. However, confined spots exist (e.g. Ross Sea surface) where the yearly averaged T has decreased in 2010 with respect to 1851. This is primarily due to ocean processes, which are however considered outside the main scope of this analysis and so not detailed hereafter.
+This project aims to investigate further the non-homogeneity in thermal changes by studying differences and similarities among urban and 
+global scale T time series between 1750 and 2010. To reach this objective, I will investigate changes in T in four cities (London, Rome, 
+Brisbane, and San Diego) in different places of the globe and contrast them to the Earth general tendency. The analysis will start with the 
+London T, chosen as case study, and evolves with the other results.
+
+3 The London case study
+Among the cities mentioned in the previous section, London is one of the biggest, having also the longest time series. As a consequence, I 
+use the city as case study, comparing its thermal variations with the other three city ones in section 4.
+Fig 2 shows the temporal evolution of the London yearly mean T in comparison with the global counterpart. Overall, it is noticeable that 
+the local and global data include two different periods. Prior than 1890 (black vertical line in the figure), Ts oscillate around 9°C and 
+8°C for those observations respectively. This steady state however ceases in 1890 when anthropogenic activities start to influence the 
+atmospheric CO2 and, consequently, increase the studied T steadily. The high variability on both time series renders difficult any other 
+conclusion. So, I filter these data by using a five-years moving average pass as described in section 1.3. The results are presented in 
+Fig 3 for the same data sets.
+By filtering out the data sets with a five-years pass, the division between a period before and one after 1890 becomes even clearer. During 
+both, the London mean T is higher than the global data by approximately 1°C. The series variabilities are comparable within the entire 
+studied time interval (1750-2010). However, spots of divergence are identifiable. For instance, the decrease of 1.5°C in the global T at 
+the beginning of the 19th century is not captured by the London data. This is probably due to processes localized in the Southern 
+hemisphere, but the data do not reliably support this speculation.
+Nevertheless, the Pearson correlation coefficient increase by 0.26 when applied the moving average filters. This leads to a R2 of 0.63, 
+which underlies that global T variations can be used to describe 63% of the London T changes. To investigate this eventuality, the global 
+and London filtered (five-years pass) T time series are plotted in Fig 4. Here, I report the least mean squares fitted linear regression, 
+the associated equation, and the squared Pearson correlation coefficient (R2).
+In agreement with the analyses in Figs 2 and 3, both data sets vary within a range of 3°C, with a difference of 1°C between them. The new 
+information given by the regression however underlies that we do not need to consider both data, but it is possible to infer one describing 
+at least two thirds of its variability. Considering a random year, such as 1986, its filtered global T is 8.77°C. From it, it is possible 
+to calculate the London counterpart using the equation reported in Fig 4. This leads to 9.75°C, which is higher than the observed estimate 
+of only 0.17°C.
+
+4	Enlarging the assessment: Brisbane, Rome, and San Diego
+Overall, the London case study has shown a good agreement with the averaged global trend. The latter can be used alone to describe 63% of 
+the former. However, this comparability may not be extendable to other cities over the globe. Here, I compare long-term variations and 
+variability of the London and global filtered Ts with the counterparts observed in Brisbane, Rome, and San Diego.
+Fig 5 shows the long-term thermal variations observed between 1890 and 2010 in London, Brisbane, Rome, San Diego, and at the scale of the 
+globe. Overall, each of the studied variations result in a thermal increase over time by roughly 0.01°C yr-1. Small differences however 
+exist and are not negligible. The Rome data has the strongest increase in the time interval investigated, which is also comparable to the 
+global value. Brisbane stores the weakest heating, confirming the already mentioned influence of geographical forcing variables on climate 
+and T values. The London and San Diego observations lie in between the other estimates, with the former city T increasing faster than the 
+latter counterpart. Fig 6 shows the short-term variability of the same data sets analyzed in Fig 5. As in the previous analysis, all of the 
+results are overall comparable, but differences are identifiable. The Brisbane and global data are roughly comparable, showing a 
+variability included within ±0.5°C. Other city time series are more variable, with short-term thermal changes included within ±0.8°C. This 
+difference is influential in climate-related studies. At a shorter time scale, the Brisbane T data decrease from 1920 to 1940. Other city 
+results show a steady state condition in agreement with the global data set.
+This result may also be due to processes in the Southern hemisphere, but a more detailed analysis is necessary to reliably support it. 
+After 1990, all of the studied curves show a tendency towards Ts stronger than the variations plotted in Fig 5. This suggests that the 
+rising CO2 may have an influence that is not linear. Other curves (e.g. exponential) may be more effective, but this possibility is 
+considered outside the main scope of this project.
+
+5	Conclusions
+This project analyses urban and global scales thermal variations between 1750 and 2010. Overall, all of them are comparable, showing a 
+general heating trend primarily caused by the increasing atmospheric CO2, which is more evident after 1890. This comparability can be also 
+used to infer one time series from another, with a R2 that reaches 0.63 when using global and London observations of T. However, 
+differences exist between the Northern and Southern hemispheres due to the effect of geographically changing forcing variables (e.g. wind 
+stress curl). Data observed in Rome and Brisbane differ from other city results owing to the influence of the Mediterranean Sea and the 
+Southern hemisphere predominant ocean coverage. Other studies will be necessary to deepen these findings.
+
+References
+ Dlugokencky, E.J., Lang, P.M., Mund, J.W., Crotwell, A.M., Crotwell, M.J., and Thoning, K.W.: Atmospheric carbon dioxide dry air mole 
+fractions from the ESRL carbon cycle cooperative global air sampling network, 1968-2016, 2017.
+ NOAA, ESRL Physical Sciences Division, Boulder Colorado from their Web site at https://www.esrl.noaa.gov/psd/, 2018.
+ Schmunk, R.B., Panoply netCDF, HDF, and GRIB Data Viewer, NASA Goddard Institute for Space Studies, 2880 Broadway, NY, USA, 1993.
+ Solomon, S., Qin, D., Manning, M., Chen, Z., Marquis, M., Averyt, K.B., Tignor, M., and Miller, H.L.: Climate Change 2007 - The physical 
+science basis, Cambridge Univ. Press, 2007.

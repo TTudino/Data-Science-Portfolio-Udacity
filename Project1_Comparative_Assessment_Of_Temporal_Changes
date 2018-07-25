@@ -59,7 +59,7 @@ should be investigated. So to account for it, I calculate the variability of eac
 
 σ_i = x_i – Δ_i	                                                                                                                        (2)
 
-2	Study rationales
+2 Study rationales
 Since the beginning of the industrial revolution (~1851), human activities have increased the atmospheric carbon dioxide (CO2) mole 
 fraction from 278 ppm to over 400 ppm (Dlugokencky et al., 2017). This has exacerbated the Greenhouse effect; being suggested as the main 
 cause of recent climate change and increasing the global mean Temperature (T; Solomon et al., 2007).
@@ -95,7 +95,7 @@ at least two thirds of its variability. Considering a random year, such as 1986,
 to calculate the London counterpart using the equation reported in Fig 4. This leads to 9.75°C, which is higher than the observed estimate 
 of only 0.17°C.
 
-4	Enlarging the assessment: Brisbane, Rome, and San Diego
+4 Enlarging the assessment: Brisbane, Rome, and San Diego
 Overall, the London case study has shown a good agreement with the averaged global trend. The latter can be used alone to describe 63% of 
 the former. However, this comparability may not be extendable to other cities over the globe. Here, I compare long-term variations and 
 variability of the London and global filtered Ts with the counterparts observed in Brisbane, Rome, and San Diego.
@@ -114,7 +114,7 @@ After 1990, all of the studied curves show a tendency towards Ts stronger than t
 rising CO2 may have an influence that is not linear. Other curves (e.g. exponential) may be more effective, but this possibility is 
 considered outside the main scope of this project.
 
-5	Conclusions
+5 Conclusions
 This project analyses urban and global scales thermal variations between 1750 and 2010. Overall, all of them are comparable, showing a 
 general heating trend primarily caused by the increasing atmospheric CO2, which is more evident after 1890. This comparability can be also 
 used to infer one time series from another, with a R2 that reaches 0.63 when using global and London observations of T. However, 

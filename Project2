@@ -1,0 +1,362 @@
+# The code that follows here has been written for the second project of the 2018 Udacity Data Analyst nano degree program. In summary, the 
+# aim is to load and explore data concerning the US bike share systems of New York City, Washington DC, and Chicago from January to June 2017.
+
+import sys
+import time
+import pandas as pd
+import numpy as np
+import datetime
+import matplotlib
+
+CITY_DATA = { 'chicago': 'chicago.csv',
+              'new york city': 'new_york_city.csv',
+              'washington': 'washington.csv' }
+
+name = input("Hello! What's your name?\n")
+
+print("Nice to meet you " + name + "! I\'m Johnny!")
+
+age = input("And what is your age, if I may ask? Just give me a number!\n")
+
+if int(age) <=20:
+    print("Great! You\'re on your best years! Let\'s have some fun!")
+else:
+    print("So, you\'re already " + str(age) + " years old, " + name + "! Don\'t worry too much! Let\'s have fun exploring US bikeshare data!")
+
+def get_filters():
+    """
+    Asks user to specify a city, month, and day to analyze.
+    Returns:
+        (str) city - name of the city to analyze
+        (str) month - name of the month to filter by, or "all" to apply no month filter
+        (str) day - name of the day of week to filter by, or "all" to apply no day filter
+    """
+    # Lead the user to the identification of the city of interest
+    city = "none"
+
+    while city.lower() != "chicago" and city.lower() != "new york city" and city.lower() != "washington":
+        city = input("Which city are you interested in? I can analyze data provided by Motivate for Chicago, New York City, or Washington. Just choose and type one of them!\n")
+        if city.lower() == "chicago" or city.lower() == "new york city" or city.lower() == "washington":
+            print("Very good choice!")
+        else:
+            print("I\'m not sure I understand! Could you please try it again?")
+
+    city = city.lower()
+
+    # Lead the user to the identification of the month of interest
+    month = "none"
+
+    while month.lower() != "all" and month.lower() != "january" and month.lower() != "february" and month.lower() != "march" and month.lower() != "april" and month.lower() != "may" and month.lower() != "june":
+        month = input("Now, which month of the year do you want to explore? Choose one from January to June or type \'All\' to include all of them!\n")
+        if month.lower() == "all" or month.lower() == "january" or month.lower() == "february" or month.lower() == "march" or month.lower() == "april" or month.lower() == "may" or month.lower() == "june":
+            print("This is also a very good choice!")
+        else:
+            print("I\'m not sure I understand! Could you please try it again?")
+
+    month = month.lower()
+
+    # Lead the user to the identification of the day of interest
+    day = "none"
+
+    while day.lower() != "all" and day.lower() != "monday" and day.lower() != "tuesday" and day.lower() != "wednesday" and day.lower() != "thursday" and day.lower() != "friday" and day.lower() != "saturday" and day.lower() != "sunday":
+        day = input("Finally, which day of the week are you interested in? Choose one from Monday to Sunday or \'All\'!\n")
+        if day.lower() == "all" or day.lower() == "monday" or day.lower() == "tuesday" or day.lower() == "wednesday" or day.lower() == "thursday" or day.lower() == "friday" or day.lower() == "saturday" or day.lower() == "sunday":
+            print("Excellent! Let\'s start!")
+        else:
+            print("I\'m not sure I understand! Could you please try it again?")
+
+    day = day.lower()
+
+    print('-'*40)
+    return city, month, day
+
+def load_data(city, month, day):
+    """
+    Loads data for the specified city and filters by month and day if applicable.
+    Args:
+        (str) city - name of the city to analyze
+        (str) month - name of the month to filter by, or "all" to apply no month filter
+        (str) day - name of the day of week to filter by, or "all" to apply no day filter
+    Returns:
+        df - Pandas DataFrame containing city data filtered by month and day
+    """
+
+    # load data file into a dataframe
+    df = pd.read_csv(CITY_DATA[city])
+
+    # convert the Start Time column to datetime
+    df['Start Time'] = pd.to_datetime(df['Start Time'])
+
+    # extract month and day of week from Start Time to create new columns
+    df['month'] = df['Start Time'].dt.month
+    df['day_of_week'] = df['Start Time'].dt.weekday_name
+
+    # filter by month if applicable
+    if month != 'all':
+        # use the index of the months list to get the corresponding int
+        months = ['january', 'february', 'march', 'april', 'may', 'june']
+        # filter by month to create the new dataframe
+        df = df[df['month'] == months.index(month) + 1]
+
+    # filter by day of week if applicable
+    if day != 'all':
+        # filter by day of week to create the new dataframe
+        df = df[df['day_of_week'] == day.title()]
+
+    return df
+
+def time_stats(df):
+    """Displays statistics on the most frequent times of travel."""
+
+    print('\nCalculating the most frequent times of travel...\n')
+    start_time = time.time()
+
+    # display the most common month
+    most_common_month = df['month'].mode()
+
+    look_up = {1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June'}
+
+    most_common_month_words = look_up[int(most_common_month[0])]
+
+    # display the most common day
+    most_common_day = df['day_of_week'].mode()
+
+    # display the most common start hour
+
+    Start_Time = pd.to_datetime(df['Start Time'])
+
+    df['hour'] = Start_Time.apply(lambda x: x.hour)
+
+    most_common_start_hour = df['hour'].mode()
+
+    print("... I\'ve found that the most common month, day, and starting hour for your entries are", most_common_month_words + ", " + most_common_day[0], "and", most_common_start_hour[0], "respectively!\n")
+    print("\nThis took me %s seconds." % (time.time() - start_time))
+    print('-'*40)
+
+    answer = "none"
+
+    while answer.lower() != "yes" and answer.lower() != "no":
+        answer = input("Are you ready to know more on this exciting data? Type \'yes\' or stop me by typing \'no\'.\n")
+        if answer.lower() == "yes":
+            print("\nExcellent! Let\'s continue!")
+        elif answer.lower() == "no":
+            print("\nThanks for the time spent with me. I\'ve enjoyed it a lot!")
+            sys.exit()
+        else:
+            print("\nI\'m not sure I understand! Could you please try it again?")
+
+def station_stats(df):
+    """Displays statistics on the most popular stations and trip."""
+
+    print('\nCalculating the most popular stations and trip...\n')
+    start_time = time.time()
+
+    # display most commonly used start station
+    most_common_start_station = df['Start Station'].mode()
+
+    # display most commonly used end station
+    most_common_end_station = df['End Station'].mode()
+
+    # display most frequent combination of start station and end station trip
+    station_combination = df.groupby(['Start Station','End Station']).size().reset_index().rename(columns={0:'count'})
+
+    station_combination_sorted = station_combination.sort_values(by=['count'], ascending=False)
+
+    print('... I\'ve found that, according to your entries, the most common combination of stations includes \"' + station_combination_sorted['Start Station'].iloc[0] + '\" as starting point, and \"' + station_combination_sorted['End Station'].iloc[0] + '\" as final destination!\n')
+    print('The most popular stations are however \"' + most_common_start_station[0] + '\" among the starting points, and \"' + most_common_end_station[0] + '\" among the ending points!\n')
+    print("\nThis took me %s seconds." % (time.time() - start_time))
+    print('-'*40)
+
+    answer = "none"
+
+    while answer.lower() != "yes" and answer.lower() != "no":
+        answer = input("Are you ready to know more on this exciting data? Type \'yes\' or stop me by typing \'no\'.\n")
+        if answer.lower() == "yes":
+            print("\nExcellent! Let\'s continue!")
+        elif answer.lower() == "no":
+            print("\nThanks for the time spent with me. I\'ve enjoyed it a lot!")
+            sys.exit()
+        else:
+            print("\nI\'m not sure I understand! Could you please try it again?")
+
+def trip_duration_stats(df):
+    """Displays statistics on the total and average trip duration."""
+
+    print('\nCalculating trip duration...\n')
+    start_time = time.time()
+
+    # display total travel time (Total_Time)
+    Difference = pd.to_datetime(df['End Time']) - pd.to_datetime(df['Start Time'])
+
+    Total_Time = int(Difference.sum().total_seconds())
+
+    # display mean travel time
+    Mean_Time = int(Difference.mean().total_seconds())
+
+    print("... I've found that, according to your entries, the total time spent travelling by bike is %(first)d seconds (a lot, isn\'t it?) and the mean time spent doing the same action is %(second)d seconds!\n" % {"first": Total_Time, "second":Mean_Time})
+    print("\nThis took me %s seconds." % (time.time() - start_time))
+    print('-'*40)
+
+    answer = "none"
+
+    while answer.lower() != "yes" and answer.lower() != "no":
+        answer = input("Are you ready to know more on this exciting data? Type \'yes\' or stop me by typing \'no\'.\n")
+        if answer.lower() == "yes":
+            print("\nExcellent! Let\'s continue!")
+        elif answer.lower() == "no":
+            print("\nThanks for the time spent with me. I\'ve enjoyed it a lot!")
+            sys.exit()
+        else:
+            print("\nI\'m not sure I understand! Could you please try it again?")
+
+def user_stats(df):
+    """Displays statistics on bikeshare users."""
+
+    print('\nCalculating User Stats...\n')
+    start_time = time.time()
+
+    #Display counts of user types
+    user_types = df['User Type'].value_counts()
+
+    print("... I've found that, according to your entries, the user types and respective amounts are:\n")
+    print(user_types)
+
+    # Display counts of gender
+    if 'Gender' in df.columns:
+        gender_types = df['Gender'].value_counts()
+        print("\n... I've found that, according to your entries, the gender types and respective amounts are:\n")
+        print(gender_types)
+    else:
+        print("\nUnfortunately, the city data you have chosen do not include a gender classification!")
+
+    #Display earliest, most recent, and most common year of birth (yob)
+    if 'Birth Year' in df.columns:
+        earliest_yob = int(df['Birth Year'].min())
+        latest_yob = int(df['Birth Year'].max())
+        most_common_yob = int(df['Birth Year'].mode())
+
+        print("\n... I've found that, according to your entries, the users\' earliest year of birth is %(first)d, the latest is %(second)d, and the most common year of birth is %(third)d!" % {"first":earliest_yob, "second":latest_yob, "third":most_common_yob})
+
+        answer = "none"
+
+        while answer.lower() != "yes" and answer.lower() != "no":
+            answer = input("\nReady to know more on the users' year of birth? Enter yes or no.\n")
+            if answer.lower() == "yes":
+                print("\nThen take a look at this statistics:\n")
+                print(df['Birth Year'].describe())
+            elif answer.lower() == "no":
+                print("Let\'s move on with the analysis!")
+            else:
+                print("\nI\'m not sure I understand! Could you please try it again?")
+    else:
+        print("\nUnfortunately, the city data you have chosen do not include a users\' year of birth classification!")
+
+    print("\nThis took %s seconds." % (time.time() - start_time))
+    print('-'*40)
+
+    answer = "none"
+
+    while answer.lower() != "yes" and answer.lower() != "no":
+        answer = input("Are you ready to know more on this exciting data? Type \'yes\' or stop me by typing \'no\'.\n")
+        if answer.lower() == "yes":
+            print("\nExcellent! Let\'s continue!")
+        elif answer.lower() == "no":
+            print("\nThanks for the time spent with me. I\'ve enjoyed it a lot!")
+            sys.exit()
+        else:
+            print("\nI\'m not sure I understand! Could you please try it again?")
+
+def yob_tot_correlation(df):
+
+    """ Calculate the Pearson's correlation coefficient r between the users'
+    year of birth (yob) and the time of travel (tot) spent biking."""
+
+    start_time = time.time()
+
+    if 'Birth Year' in df.columns:
+        answer = "none"
+        while answer.lower() != "no" and answer.lower() != "yes":
+            answer = input("\nI\'m getting really excited about this analysis. Do you think there might be a correlation between the users' year of birth and their time of travel? Try a guess by entering yes or no.\n")
+            yob_standardised = (df['Birth Year'] - df['Birth Year'].mean()) / df['Birth Year'].std(ddof = 0)
+            Difference = pd.to_datetime(df['End Time']) - pd.to_datetime(df['Start Time'])
+            Difference_standardised = (Difference - Difference.mean()) / Difference.std(ddof = 0)
+            correlation = (yob_standardised * Difference_standardised).mean()
+            if int(correlation)*100 >= 50 and answer.lower() == "yes":
+                print("\nIt seems you were correct. The Pearson\'s correlation coefficient (r) is:\n")
+                print(correlation)
+            elif int(correlation)*100 <= 50 and answer.lower() == "yes":
+                print("\nI\'m sorry to disappoint you. The Pearson\'s correlation coefficient (r) between the users' year of birth and time of travel is:")
+                print(correlation)
+            elif int(correlation)*100 <= 50 and answer.lower() == "no":
+                print("\nIt seems you were correct. The Pearson\'s correlation coefficient (r) is:\n")
+                print(correlation)
+            elif int(correlation)*100 >= 50 and answer.lower() == "no":
+                print("\nI\'m sorry to disappoint you. The Pearson\'s correlation coefficient (r) between the users' year of birth and time of travel is:")
+                print(correlation)
+            else:
+                print("\nI\'m not sure I understand! Could you please try it again?")
+    else:
+        print("\nI wish we could have calculated the correlation between the users\' year of birth and their time of travel, but the data of the city you have chosen do not include the first.")
+
+    print("\nThis took %s seconds." % (time.time() - start_time))
+    print('-'*40)
+
+def hour_tot_correlation(df):
+
+    """ Calculate the Pearson's correlation coefficient r between the hour of the day (hod) and the time of travel (tot) spent biking."""
+
+    start_time = time.time()
+
+    answer = "none"
+
+    while answer.lower() !="yes" and answer.lower() != "no":
+        answer = input("\nLet\'s try another analysis. Do you think there might be a correlation between the hour of the day and the time spent biking? Try a guess by entering yes or no.\n")
+        Start_Time = pd.to_datetime(df['Start Time'])
+        hod = Start_Time.apply(lambda x: x.hour)
+        hod_standardised = (hod - hod.mean()) / hod.std(ddof = 0)
+        Difference = pd.to_datetime(df['End Time']) - pd.to_datetime(df['Start Time'])
+        Difference_standardised = (Difference - Difference.mean()) / Difference.std(ddof = 0)
+        correlation = (hod_standardised * Difference_standardised).mean()
+
+        if int(correlation)*100 >= 50 and answer.lower() == "yes":
+            print("\nIt seems you were correct. The Pearson\'s correlation coefficient (r) is:\n")
+            print(correlation)
+        elif int(correlation)*100 <= 50 and answer.lower() == "yes":
+            print("\nI\'m sorry to disappoint you. The Pearson\'s correlation coefficient (r) between the hour of the day and time of travel is:")
+            print(correlation)
+        elif int(correlation)*100 <=50 and answer.lower() == "no":
+            print("\nIt seems you were correct. The Pearson\'s correlation coefficient (r) is:\n")
+            print(correlation)
+        elif int(correlation)*100 >=50 and answer.lower() == "no":
+            print("\nI\'m sorry to disappoint you. The Pearson\'s correlation coefficient (r) between the hour of the day and time of travel is:")
+            print(correlation)
+        else:
+            print("\nI\'m not sure I understand! Could you please try it again?")
+
+    print("\nThis took %s seconds." % (time.time() - start_time))
+    print('-'*40)
+
+    print("I wish we could have plotted all of the mentioned variables to finish our analysis. But I cannot do it on this display. Maybe next time!")
+
+def main():
+    while True:
+        city, month, day = get_filters()
+        df = load_data(city, month, day)
+
+        time_stats(df)
+        station_stats(df)
+        trip_duration_stats(df)
+        user_stats(df)
+        yob_tot_correlation(df)
+        hour_tot_correlation(df)
+
+        restart = input('\nWould you like to restart? Enter yes or no.\n')
+
+        if restart.lower() != 'yes':
+
+            print("Thanks for the time spent with me. I\'ve enjoyed it a lot!")
+
+            break
+
+if __name__ == "__main__":
+	main()

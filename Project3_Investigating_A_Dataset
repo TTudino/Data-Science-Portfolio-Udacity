@@ -1,0 +1,471 @@
+Can we predict movies popularity before the release? An investigation of the moviedb database using Pandas, Numpy, and Matplotlib
+
+Table of Contents
+
+1) Introduction
+2) Data Wrangling 
+3) Exploratory Data Analysis 
+4) Conclusions
+
+1.Introduction
+
+In this project, I investigate data from the moviedb database (https://www.themoviedb.org/documentation/api) aiming to evaluate potential 
+predictions of movies popularity before the release date. I explore variations in movies genre, topic, runtime, budget, and revenue from 
+1960 to 2015, also comparing these properties with a popularity index (see the moviedb website for additional details).
+These six variables are explored using Pandas, Numpy, and Matplotlib to answer several burning questions. Which genres are most popular 
+from year to year? What kinds of properties are associated with movies that have high revenues? Which month of the year should be aimed to 
+increase movies popularity? Is there a correlation between movies popularity and the day in which they are released? All of these questions
+are tackled after an accurate data wrangling and cleaning, as it is briefly summarized in the next two sections.
+However, before starting the mentioned analyses, I import in the Jupyter Notebook workspace the packages required for the study: Numpy, 
+Pandas, Matplotlib, and Seaborn, with the last improving the Matplotlib visualizations. For each, I use a shortcut (e.g. np for Numpy) to 
+make the code more readable. I also specify the matplotlib inline command to obtain that any graph will appear in the same document as 
+my text and code. Finally, I decide to ignore the Jupyter Notebook default warnings to increase the readability of the final text:
+
+""" The following code lines are used to explore a modified subset of movie related data taken from the moviedb web site (https://www.
+themoviedb.org/documentation/api). The main aim is the exploration of potential predictabilities in the movies popularity before their 
+releases.
+"""
+# This initial code lines import the packages necessary for the analysis: numpy, pandas, matplotlib, and seaborn...
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+# ... ignoring the Jupyter Notebook warnings in order to ameliorate the document readability.
+import warnings; warnings.simplefilter('ignore')
+# This line calls for matplotlib inline to see all graphs in the same document as the text and code:
+% matplotlib inline
+
+2.Data Wrangling
+
+General Properties of the moviedb dataset
+
+After downloading a modified version of the moviedb dataset from the Udacity course web space, I load it into the Jupyter Notebook 
+workspace and name it df_movies, where df is an abbreviation for dataframe. Then, I look at the df_movies size and first three lines using 
+the functions shape and head, respectively:
+
+# This line reads the csv data by using the function read_csv and stores them in a dataframe named df_movies:
+df_movies = pd.read_csv('tmdb-movies.csv')
+# Then, the code looks at the dataframe dimensions by using the shape function...
+df_movies.shape
+# ... and at the first three lines of the dataframe using the function head: 
+df_movies.head(3)
+
+So, the df_movies dataframe includes 10866 movies and twenty-one properties within as many columns. The 'id' and 'imdb_id' are 
+complementary identifiers. The 'budget' and 'revenue' show the dollar amounts spent for the movie production and obtained from its release.
+The 'original_title', 'cast', 'homepage', 'director', 'runtime' (in minutes), 'genres', production_companies', and 'release_date' columns 
+are self-explanatory. The 'tagline' is a sentence associated to the movie that summarises its essence. The 'overview' summarizes the movie 
+content. The 'vote_count' shows the number of votes obtained by each movie, while the 'vote_average' includes the mean result of these 
+votes. The 'budget_adj' and 'revenue_adj' show the budget and revenue values in term of 2010 dollars, accounting for inflation overtime.
+
+With the dataframe general properties summarized in the previous paragraph, I will now concentrate on the challenges associated with the 
+data cleaning that will be done in the next section. Notwithstanding the usefulness of the columns included in the dataframe, some of them 
+are not usable in the present analysis. For instance, the existence of a movie webpage may be a reason for the popularity increase, but it 
+is not possible to compare it between movies released in 1960, where the web was inexistent, and the most recent releases. Additionally, 
+the inclusion of more than one actor in the cast column guarantees the dataframe simplicity and manageability, however it is a source of 
+confusion in the study summarized hereafter. The same is true for the 'genres', 'keywords', and 'production_companies' columns. The 
+combined inclusion of the release year and date is redundant for my exploration. Among those variables, the latter is also stored as 
+month/day/year, which is a convection used only in the United States and so may be source of additional confusion. Finally, the existence 
+of null values in the dataframe should be also considered and tackled in the remaining part of this document. 
+
+Cleaning the moviedb dataset
+
+As anticipated in the previous section, the df_movies dataframe necessitates of several cleaning steps. As a start, the presence of 
+unadjusted and adjusted budget and revenue values is relevant only when investigating inflation changes. This is however outside the scope 
+of my analysis. So, I drop the unadjusted columns, while keeping the adjusted values that can be compared over time. I also drop the 
+'imdb_id', 'homepage', 'tagline', and 'overview' columns, as they are not comparable with the 'popularity' over time. For all, I use the 
+function drop and check the results looking at the dataframe initial three rows:
+
+""" As initial data cleaning step, the code drops the unwanted columns ('imdb_id' ... 'revenue') using the function drop and force the 
+result storage in place by adding inplace = True:
+"""
+df_movies.drop(['imdb_id', 'homepage', 'tagline', 'overview', 'budget', 'revenu e'], axis = 1, inplace = True)
+# Then, the code checks for the results by using the function head:
+df_movies.head(3)
+
+As also anticipated in the previous section, the presence of several names and words separated by a | in the 'cast', 'keywords', 'genres', 
+and 'production_companies' columns is a source of confusion. To avoid it, I separate each of these variables into five different columns 
+and drop the original values to avoid repetitions. I use the functions str.split and drop, respectively. Then I look at the dataframe shape
+and initial three rows to check for the results:
+
+""" The following code lines separate the 'cast', 'keywords', 'genres', and 'production_companies' values in five different columns each by 
+using the function str.split:
+"""
+df_movies[['cast1','cast2','cast3','cast4','cast5']] = df_movies['cast'].str.sp lit('|', expand=True) df_movies[['kword1','kword2','kword3',
+'kword4','kword5']] = df_movies['keywords '].str.split('|', expand=True) df_movies[['genre1','genre2','genre3','genre4','genre5']] = 
+df_movies['genres'] .str.split('|', expand=True) df_movies[['pcomp1','pcomp2','pcomp3','pcomp4','pcomp5']] = df_movies
+['production_companies'].str.split('|', expand=True)
+""" Then, the code drops the original four columns (cast, keywords, genres, and production_companies) as their existence in the dataframe 
+is now redundant:
+"""
+df_movies.drop('cast', axis = 1, inplace = True) df_movies.drop('keywords', axis = 1, inplace = True) df_movies.drop('genres', axis = 1, 
+inplace = True) df_movies.drop('production_companies', axis = 1, inplace = True)
+# And, once more, the code checks for the results by using the functions shape...
+df_movies.shape
+# ... and head:
+df_movies.head(3)
+
+As a third step, I tackle the date challenges anticipated in the 'General Properties of the moviedb dataset' section. Initially, I separate 
+the month, day, and year of each movie release using the function str.split. Then, I drop the year column, which is now redundant with 
+respect to the 'release_year', and the 'release_date' using the function drop:
+
+""" This code lines separate the day, month, and year of the 'release_date' col
+umn. Then, they drop the second last
+and the last, as they are redundant with respect to the 'release_year' and the
+newly created properties:
+"""
+df_movies[['month','day','year']] = df_movies['release_date'].str.split('/', ex pand=True)
+df_movies.drop('year', axis = 1, inplace = True) df_movies.drop('release_date', axis = 1, inplace = True)
+
+At this stage of the data cleaning process, most of the challenges raised in the previous paragraphs have been solved. However, I still 
+need to check that every column has its own appropriate data type and tackle the existence of null values, zeros, and duplicates in the 
+table. I can start this challenge by using the function info:
+
+# The code is now checking for null values and potential redundant columns by u sing the function info:
+df_movies.info()
+
+The first feature that emerges from the info-based analysis is that the dataframe size enlarges to thirty-two columns. Although this is an 
+unavoidable consequence of the data cleaning process, some of these new columns could be dropped. For instance, it is reasonable to assume 
+that the most influential production company is the first one in the list, so we could drop pcomp2 to pcomp5. A similar reasoning leads to 
+drop genre2 to genre5 and kword2 to kword5. Using the function info checks the results of these actions:
+
+""" Considered of secondary importance, the columns kword2 ... kword5, genre2 ... genre5, and pcomp2 ... pcomp5 are dropped here ...
+"""
+df_movies.drop(['kword2', 'kword3', 'kword4', 'kword5', 'genre2', 'genre3', 'ge nre4', 'genre5', 'pcomp2', 'pcomp3', 'pcomp4', 'pcomp5'], 
+axis = 1, inplace = True)
+# ... and the results are checked by using the function info:
+df_movies.info()
+
+The second feature that emerges from this modified dataframe is that the month and day columns have a different data type with respect to 
+the release_year. Although none of them is a date, integers are useful for my analysis, so I change the month and day types using the 
+astype function and check the results once more with the function info:
+
+# This code lines adjust the erroneous data type of 'month' and 'day' from object to integer ...
+df_movies['month'] = df_movies['month'].astype('int64')
+df_movies['day'] = df_movies['day'].astype('int64')
+# ... and check the result by using the function info:
+df_movies.info()
+
+All of the dataframe columns have now the appropriate data type. However, some of them include a relatively high amount of null values. For 
+instance, the 'kword1' column includes 10866 - 9373 = 1493 null values. Those could be filled manually by looking at each row and surf the 
+web for information on the associated movie. However, for the sake of my analyses, I decide to drop every null value using the dropna 
+function and check the result using info:
+
+# Here, the code takes care of the null values in the dataframe by dropping all of them at once ...
+df_movies.dropna(inplace = True)
+# ... and checking the results with the function info:
+df_movies.info()
+
+At this stage, the dataframe is almost ready to be explored. However, I still need to check the presence of potential duplicate and cells 
+where zeros are stored. Both of them could influence the assessment done hereafter and must be assessed. As a start, I use the function all 
+to check for zeros (result = False) in the dataframe columns.
+
+""" At this stage of the analysis, it is important to check for potential zeros, so the code uses the function all that returns False when 
+a value is null, non-existent, or zero. But in our case only the last is possible.
+"""
+df_movies.all()
+
+From this analysis, it appears that the 'runtime', 'budget_adj', and 'revenue_adj' columns contain zeros. So, I drop the associated rows by
+using the code lines that follow and check for the result by using the function all.
+
+# After finding some zeros in the 'runtime', 'budget_adj', and 'revenue_adj' columns, the code cleans them ...
+df_movies = df_movies[df_movies.runtime != 0]
+df_movies = df_movies[df_movies.budget_adj != 0]
+df_movies = df_movies[df_movies.revenue_adj != 0]
+# ... and check the results by applying the function all again:
+df_movies.all()
+
+After removing the rows that include zeros, the last cleaning step is the check of duplicates. To reach this objective, I use the function 
+duplicated, as it follows.
+
+""" Here, the code checks for potential duplicates in the dataframe by creating a new column that includes True when the row is a duplicate ...
+"""
+df_movies["is_duplicate"]= df_movies.duplicated()
+# ... then removing all rows that have the 'is_duplicate' = True ...
+df_movies = df_movies[df_movies['is_duplicate'] == False]
+# ... and finally check the result by using the function info:
+df_movies.info()
+
+From this analysis, it appears that none of the cleaned dataframe rows have duplicates. So, I am now ready to have a first look at the 
+integer and float variables of my dataset by using the function hist:
+
+""" It is now possible to have a first look at the cleaned data by using the fu nction hist that plots all of the integer and float 
+properties of the analyzed movies:
+"""
+df_movies.hist(bins = 40, figsize = (20, 10));
+
+This preliminary view of the dataframe numeric variables highlights that the majority of the movies has relied on a relatively low budget, 
+with the associated histogram being right-skewed and long tailed. The same is true for the adjusted revenue, suggesting a correlation 
+between these two variables. Regarding the release day and month, it appears that most of the analyzed movies were released in September 
+and in the middle of each month. Potential links between these results and changes in popularity will be explored in the next sections. 
+The popularity index and amount of voting people are low for most of the movies, with the histograms being right-skewed and long tailed, 
+in agreement with the budget and revenue results. The mean vote distribution is Gaussian and has a median at approximately 6.3 over 9. 
+Finally, the amount of movies released every year has increased steadily over time, as expected.
+
+Exploratory Data Analysis
+
+Research Question 1: which genres are most popular from year to year?
+
+To answer the question reported in this section title, I need to isolate three movie properties from my dataframe: genre, year of release, 
+and popularity. Let's have a look at each of them separately. As a first step, I analyze the genre by looking at its values with the 
+function value_counts:
+
+# Here, the code looks at the 'genre1' categories and the accompanying amounts in this dataframe column:
+df_movies['genre1'].value_counts()
+
+From this analysis emerges that the 'genre1' column includes nineteen values, with the drama and TV Movie being the highest and lowest, 
+respectively. As a second step, I look at the popularity index. This variable differs from the genre, being a float instead of a string 
+(object). So, I look at the popularity index by using the function describe.
+
+# Being the 'popularity' a float, the code looks at it using a statistical description based on the function describe:
+df_movies['popularity'].describe()
+
+The popularity index includes floats that vary between 0.01 and 32.99. However, this variable distribution is strongly right-skewed, being 
+the mean equals to 1.23 and 75% of the values being lower than 1.42. Changes in popularity over time can be explored using the function 
+plot:
+
+# Here, the code plots the 'release_year' and 'popularity' values, adding the appropriate title and axes legends:
+ax = df_movies.plot(x = 'release_year', y = 'popularity', figsize = (18, 9), st yle = '.', legend = False, fontsize = 20)
+ax.set_xlabel("Year of release", fontsize = 20);
+ax.set_ylabel("Popularity index", fontsize = 20);
+plt.title('Changes in the movie popularity over time', fontsize = 30);
+
+The above graph shows that the movies popularity has increased steadily over time, with intermittent peaks and few outliers in 1977, 2014, 
+and 2015. Having explored the 'genre1' and 'popularity' columns, I am now ready to combine these variables and investigate potential 
+changes in the genre popularity over time. To reach this aim, I create a smaller dataframe that includes only the variables of interest 
+and check the result by using the function head:
+
+# To increase the clarity of the analysis, the code creates a sub dataframe that includes only three properties ...
+df_movies_pop = df_movies[['release_year', 'genre1', 'popularity']]
+# ... and checks the result by using the function head:
+df_movies_pop.head(3)
+
+Then, I group my result means over the year of release and genre categories by using the function groupby and checking the results with the 
+function head:
+
+# Then, the code groups the new dataframe by year and genre: df_movies_pop.groupby(['release_year', 'genre1'])['popularity'].mean().head(10)
+
+At this stage, all of the investigated movies are grouped by genre and year, but the interpretation of the results is still challenging and 
+may require a plot. However, in order to be plotted, the data should be further grouped by genre and arrange in a new dataframe. To reach 
+this objective, I use the loc and rename functions and ignore the genres that are linked to less than 95 movies for clarity (see the use of
+value_counts before in this document).
+
+# Here, a further and more detailed grouping is done for each of the most popular movies genres:
+df_movies_pop_action = df_movies_pop.loc[df_movies_pop['genre1'] == 'Action'].groupby(['release_year']).mean()
+df_movies_pop_action = df_movies_pop_action.rename(columns={'popularity': 'pop_action'})
+df_movies_pop_adventure = df_movies_pop.loc[df_movies_pop['genre1'] == 'Adventure'].groupby(['release_year']).mean()
+df_movies_pop_adventure = df_movies_pop_adventure.rename(columns={'popularity':'pop_adventure'})
+df_movies_pop_comedy = df_movies_pop.loc[df_movies_pop['genre1'] == 'Comedy'].groupby(['release_year']).mean()
+df_movies_pop_comedy = df_movies_pop_comedy.rename(columns={'popularity': 'pop_comedy'})
+df_movies_pop_crime = df_movies_pop.loc[df_movies_pop['genre1'] == 'Crime'].groupby(['release_year']).mean()
+df_movies_pop_crime = df_movies_pop_crime.rename(columns={'popularity': 'pop_crime'})
+df_movies_pop_drama = df_movies_pop.loc[df_movies_pop['genre1'] == 'Drama'].groupby(['release_year']).mean()
+df_movies_pop_drama = df_movies_pop_drama.rename(columns={'popularity': 'pop_drama'})
+df_movies_pop_horror = df_movies_pop.loc[df_movies_pop['genre1'] == 'Horror'].groupby(['release_year']).mean()
+df_movies_pop_horror = df_movies_pop_horror.rename(columns={'popularity': 'pop_horror'})
+df_movies_pop_fantasy = df_movies_pop.loc[df_movies_pop['genre1'] == 'Fantasy'].groupby(['release_year']).mean()
+df_movies_pop_fantasy = df_movies_pop_fantasy.rename(columns={'popularity': 'pop_fantasy'})
+df_movies_pop_thriller = df_movies_pop.loc[df_movies_pop['genre1'] == 'Thriller'].groupby(['release_year']).mean()
+df_movies_pop_thriller = df_movies_pop_thriller.rename(columns={'popularity': 'pop_thriller'})
+df_movies_pop_animation = df_movies_pop.loc[df_movies_pop['genre1'] == 'Animation'].groupby(['release_year']).mean()
+df_movies_pop_animation = df_movies_pop_animation.rename(columns={'popularity':'pop_animation'})
+df_movies_pop_sfiction = df_movies_pop.loc[df_movies_pop['genre1'] == 'ScienceFiction'].groupby(['release_year']).mean()
+df_movies_pop_sfiction = df_movies_pop_sfiction.rename(columns={'popularity': 'pop_sfiction'})
+# Then, the code concatenates all of the small dataframes created in the previous lines in one table ...
+df_movies_pop_merged = pd.concat([df_movies_pop_action, df_movies_pop_adventure, df_movies_pop_comedy, df_movies_pop_crime, 
+df_movies_pop_drama, df_movies_pop_horror, df_movies_pop_fantasy, df_movies_pop_thriller, df_movies_pop_animation, df_movies_pop_sfiction], 
+axis=1, join_axes=[df_movies_pop_action.index])
+# ... and checks the result by using the function head
+df_movies_pop_merged.head(3)
+
+By looking at the new merged dataframe, it appears that few columns include NaN values. This challenge results clearer when using the 
+function info:
+
+# Here, the code looks for potential null values in the newly created dataframe by using the function info ...
+df_movies_pop_merged.info()
+
+Several methods exist to fill the NaN values in a dataframe. For instance, it is possible to use other variables and create a regression 
+model that helps filling the missing values. However, for simplicity, I use each column means, as follows:
+
+# ... then replacing each of them with the column average ...
+df_movies_pop_merged['pop_crime'].fillna(df_movies_pop_merged['pop_crime'].mean (), inplace = True) 
+df_movies_pop_merged['pop_horror'].fillna(df_movies_pop_merged['pop_horror'].mean(), inplace = True) 
+df_movies_pop_merged['pop_fantasy'].fillna(df_movies_pop_merged['pop_fantasy'].mean(), inplace = True) 
+df_movies_pop_merged['pop_thriller'].fillna(df_movies_pop_merged['pop_thriller' ].mean(), inplace = True) 
+df_movies_pop_merged['pop_comedy'].fillna(df_movies_pop_merged['pop_comedy'].mean(), inplace = True) 
+df_movies_pop_merged['pop_adventure'].fillna(df_movies_pop_merged['pop_adventure'].mean(), inplace = True) 
+df_movies_pop_merged['pop_drama'].fillna(df_movies_pop_merged['pop_drama'].mean (), inplace = True) 
+df_movies_pop_merged['pop_animation'].fillna(df_movies_pop_merged['pop_animatio n'].mean(), inplace = True) 
+df_movies_pop_merged['pop_sfiction'].fillna(df_movies_pop_merged['pop_sfiction' ].mean(), inplace = True)
+# ... and checking the result by using the function info:
+df_movies_pop_merged.info()
+
+Having isolated the variables of interest and tackled all of the NaN values, I can now plot the genres popularity (pop) in a single graph 
+using the function plot:
+
+# Having created and cleaned the dataframe of interest, the code now plots the changes in movies popularity over time:
+ax = df_movies_pop_merged.plot(x = df_movies_pop_merged.index.values, y = ["pop_action", "pop_adventure", "pop_comedy", "pop_crime", 
+"pop_drama", "pop_horror", "pop_fantasy", "pop_thriller", "pop_animation", "pop_sfiction"], figsize = (18, 9), style = '-', fontsize = 20, 
+colormap = 'Accent');
+# ... and associates to them the appropriate axes labels, title, and legend:
+ax.set_xlabel("Year of release", fontsize = 20);
+ax.set_ylabel("Popularity index", fontsize = 20);
+plt.title('Changes in the popularity of movie genres over time', fontsize = 30);
+plt.legend(fontsize=15);
+
+From the graph above, it is clear that the popularity of movie genres varies overtime. In some years, specific genre peaks to very high 
+values of popularity. For instance in the early 2000s the popularity of the fantasy movies emerge from the background, reaching values of 
+3.0 and more. This is due to the release of high-impact movies such as "The lord of the rings" trilogy. More recently, in 2015, the 
+popularity of the action movies also emerges from the overall background thanks to the release of the awaited "Jurassic World". Apart from 
+these intermittent peaks, the graph highlights that the adventure and animation movies have been the most popular from 1960 to 2015, with 
+the former reaching maximum values in 1977, 1980, and 2014 and the latter peaks to high values in the 1990s.
+
+Research Question 2: what kinds of properties are associated with movies that have high revenues?
+
+As for the previous question, several methods can be used to answer my second research question. Among them, I explore potential 
+correlations between the movies adjusted revenue, adjusted budget, runtime, and popularity from 1960 and 2015.
+Starting from the adjusted budget and revenue, it is possible to plot them and look at the Pearson's correlation coefficient by using the 
+functions plot and corr respectively:
+
+# Here, the code plots the 'budget_adj' and 'revenue_adj' values and associates to them the appropriate axes labels ...
+ax = df_movies.plot(x = 'budget_adj', y = 'revenue_adj', figsize = (18, 9), sty le = '.', legend = False, fontsize = 20)
+ax.set_xlabel("Adjusted budget", fontsize = 20);
+ax.set_ylabel("Adjusted revenue", fontsize = 20);
+# ... and title:
+plt.title('Assessing correlations between budgets and revenues', fontsize = 30);
+
+# The code quantifies the Pearson's correlation coefficient between the properties of interest:
+df_movies['budget_adj'].corr(df_movies['revenue_adj'])
+
+By assessing the plot and subsequent correlation calculation, it is possible to highlight that the movie revenue is dependent on the budget 
+spent. Although this result is expected, the correlation coefficient is 0.56, hence suggesting that only three fifths of the revenue depend 
+on the movie spent for the preparation. Turning attention to the influence of the movie runtime, I repeat the analyses by plotting this 
+property in respect to the adjusted revenue and quantifying the accompanying Pearson's correlation coefficient.
+
+# Here, the code plots the 'runtime' and 'revenue_adj' values and associates to them the appropriate axes labels ...
+ax = df_movies.plot(x = 'runtime', y = 'revenue_adj', figsize = (18, 9), style = '.', legend = False, fontsize = 20)
+ax.set_xlabel("Runtime", fontsize = 20);
+ax.set_ylabel("Adjusted revenue", fontsize = 20);
+# ... and title:
+plt.title('Assessing correlations between runtimes and revenues', fontsize = 30);
+
+# Here, the code plots the 'runtime' and 'revenue_adj' values and associates to
+them the appropriate axes labels ...
+ax = df_movies.plot(x = 'runtime', y = 'revenue_adj', figsize = (18, 9), style = '.', legend = False, fontsize = 20)
+ax.set_xlabel("Runtime", fontsize = 20);
+ax.set_ylabel("Adjusted revenue", fontsize = 20);
+# ... and title:
+plt.title('Assessing correlations between runtimes and revenues', fontsize = 30);
+# The code quantifies the Pearson's correlation coefficient between the properties of interest:
+df_movies['runtime'].corr(df_movies['revenue_adj'])
+
+
+Although the above graph is highly scattered and shows an almost null correlation between movies runtimes and adjusted revenues, the 
+calculation of the Pearson's correlation coefficient suggests that a fifth of the latter is influenced by the former. This is however a 
+suspicious result on which I suggest caution. Additional exploration should be done, but are considered outside the main scope of this 
+project. Finally, I explore potential links between the movie revenue and popularity. To do so, I repeat the above analyses using the 
+'popularity' and 'adjusted revenue' columns.
+
+# Here, the code plots the 'popularity' and 'revenue_adj' values and associates to them the appropriate axes labels ...
+ax = df_movies.plot(x = 'popularity', y = 'revenue_adj', figsize = (18, 9), sty le = '.', legend = False, fontsize = 20)
+ax.set_xlabel("Popularity index", fontsize = 20);
+ax.set_ylabel("Adjusted revenue", fontsize = 20);
+# ... and title:
+plt.title('Assessing correlations between popularities and revenues', fontsize = 30);
+# The code quantifies the Pearson's correlation coefficient between the properties of interest:
+df_movies['popularity'].corr(df_movies['revenue_adj'])
+
+As expected, there is a correlation (0.54) between the popularity of a movie and its revenue. This result suggests also that there might be 
+a link between the monies spent for a movie and its popularity, although the graph maintains scattered. I explore this possibility by using 
+the function corr:
+
+# The code quantifies the Pearson's correlation coefficient between the properties of interest:
+df_movies['popularity'].corr(df_movies['budget_adj'])
+
+In agreement with what has been discussed so far, approximately 39% of the popularity of a movie may depend on the realization budget.
+
+Research Question 3: which month of the year should be aimed to increase movies popularity?
+
+In line with the previous research questions, selecting the month and popularity from the df_movies dataframe does the identification of 
+the most convenient month of the year for a movie release. Then, I plot these properties and estimate the associated Pearson's correlation 
+coefficient.
+
+As a first step, I include only the two properties of interest in a new dataframe and check for the result using the function head:
+
+# Here, the code creates a new dataframe that includes only the month of release and the popularity of a movie ...
+df_movies_month = df_movies[['month', 'popularity']]
+# ... and checks the result by using the function head:
+df_movies_month.head(3)
+
+Then, I can group the results by each month and calculate the associated mean popularity:
+
+# Similarly to what was done before, the code groups the newly created dataframe by the month of release ...
+df_movies_month = df_movies_month.groupby(['month']).mean()
+# ... and checks the result by using the function head:
+df_movies_month.head(3)
+
+Finally, I can plot the results and estimate the associated Pearson's correlation coefficient:
+
+# Here, the code plots the 'month' and 'popularity' values and associates to them the appropriate axes labels ...
+ax = df_movies_month.plot(figsize = (18, 9), style = '.', legend = False, fonts ize = 20)
+ax.set_xlabel("Month of the year", fontsize = 20);
+ax.set_ylabel("Popularity index", fontsize = 20);
+# ... and title:
+plt.title('Assessing correlations between popularities and months', fontsize =30);
+
+# The code quantifies the Pearson's correlation coefficient between the properties of interest:
+df_movies['popularity'].corr(df_movies['month'])
+
+By combining the graph and the calculation above, I conclude that the best month on which a movie release increases its popularity is June. 
+This could be linked to the preliminary results obtained in the 'cleaning the moviedb dataset' section: although the majority of the movies 
+investigated has been released in September, this does not seem to be the most efficient approach. However, it is also true that the 
+correlation coefficient between the movie release month and popularity is only 0.03.
+
+Research Question 4: is there a correlation between the movie popularity and the day in which it is released?
+
+To answer to my fourth and last research question, I use an approach analogous to the one applied in the section before, choosing the 
+movies property 'day'.
+
+# As also done before, the code creates a new dataframe that includes only the day of release and movie popularity ...
+df_movies_month = df_movies[['day', 'popularity']]
+# ... and checks the result by using the function head:
+df_movies_month.head(3)
+# Then, the code groups the newly formed dataframe by the release day ... 
+df_movies_month = df_movies_month.groupby(['day']).mean()
+# ... and check again the result by using the function head: 
+df_movies_month.head(3)
+# Here, the code plots the 'day' and 'popularity' values and associates to them the appropriate axes labels ...
+ax = df_movies_month.plot(figsize = (18, 9), style = '.', legend = False, fonts ize = 20)
+ax.set_xlabel("Day of the month", fontsize = 20);
+ax.set_ylabel("Popularity index", fontsize = 20);
+# ... and title:
+plt.title('Assessing correlations between popularities and days', fontsize = 30);
+# The code quantifies the Pearson's correlation coefficient between the properties of interest:
+df_movies['popularity'].corr(df_movies['day'])
+
+From this analysis, it appears that the choice of the release day is roughly three times less influential on the movie popularity than the 
+associated month. This is however a result that should be interpreted with caution, being correlation coefficients of 0.03 and 0.01 not 
+statistically different. Nevertheless, the best day to release a movie appears to be the 18th of the month.
+
+Conclusions
+
+The study of movies popularity changes in the past years and their potential predictability is an exploration that could moves billion of 
+dollars. This is however an uneasy task that requires assumptions and, in some cases, simplifications. In my project, I have analyzed a 
+modified version of the moviedb dataset from 1960 to 2015 aiming to clarify this topic.
+Although the data show significant variabilities over time, the most appreciated genres in the mentioned time interval are animation and 
+adventure. This suggests that movies of this kind could have a better chance to obtain greater revenues. However, the expectation of single 
+movies also played a key role. In the early 2000s, the fantasy genre popularity emerged from the background owing to the release of the 
+awaited "The lord of the rings" trilogy.
+On top of the genre and expectation, data confirm that the popularity of a movie depends on the budget spent on its realization, with a 
+final correlation coefficient of 0.56. Although expected, this result shows that the monies invested in a movie are not the only reason 
+behind its success. Additional effects seem to be due to the runtime and popularity. The day chosen for the release appears to have a 
+secondary influence, although my analyses show that the best moment to release a movie and increase its chances of high revenue is the 18th 
+of June.
+Notwithstanding the informative conclusions of this project, several limitations remain and should be discussed here. Firstly, the null 
+values in the dataframe have been dropped in a first approach and then replaced by the column means. These methodologies are quick and 
+relatively correct, but time-consuming approaches may be more robust. For instance, the use of a linear regression model to replace the NaN 
+in the second approach is more robust than the use of mean values. Secondly, the use of correlations among movies properties is surely a 
+good way to approach the research questions. However, it must be noticed that all of the graphs shown in this document appear to be highly 
+scattered and, so, additional cleaning may have been necessary to improve the robustness of the results. Furthermore, although a high 
+correlation implies a link in between the variables used for its calculation, this link is not necessarily causation. Lastly, I use mean 
+values in several places of this document analysis. However, these estimates depend on the amount of data used for its calculation and so 
+they may be biased towards the variables that have a higher amount.

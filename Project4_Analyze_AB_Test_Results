@@ -1,0 +1,375 @@
+An A/B test of the conversions obtained before and after the potential launch of a new website for an e-commerce
+
+Table of Contents
+
+1) Introduction 
+2) Probability 
+3) A/B Test 
+4) Regression 
+5) Conclusions
+
+1.Introduction
+
+A/B tests are useful controlled experiments used to evaluate the applicability of variations under a statistical perspective (Kohavi and 
+Longbotham, 2015, https://www.exp-platform.com/Documents/2015%20Online%20Controlled%20Experiments_EncyclopediaOfMLDM.pdf). This methodology 
+is applied to medical studies to investigate the effectiveness of drugs by comparing control (no drug given) and experiment (drug given) 
+samples of people over time. Similarly, A/B tests can be applied in environmental science to evaluate the effect of a pollutant on species 
+of interest by e.g. setting two environments in a lab that differ only because in one the pollutant is included (experiment) while it is 
+omitted in the control. In the present document, I will use an A/B test to evaluate variations in the amount of conversions (money 
+transactions), which is used as an effectiveness estimate, before and after the launch of a new website for an e-commerce. This analysis 
+will be supported by the estimates of the associated probabilities and the use of a series of logistic regressions.
+To identify challenges and benefits of this launch, I will structure my analysis as follows. In section 2, I will explore the probability 
+of obtaining higher conversions for the studied e-commerce when using the old or new webpages. In section 3, I will deepen the results of 
+section 2 by applying a proper A/B test and discussing the associated results. In section 4, I will use an alternative approach based on 
+logistic regressions and comment on potential agreements with the previous section studies. In section 5, I will summarize my findings, 
+discussing the final recommendations for the e-commerce.
+
+2.Probability
+
+As initial approach to the e-commerce data, I will explore the effectiveness of the new webpage using probability estimates. I start by 
+importing the python pandas, numpy, random, statsmodel.api, norm, and matplotlib.pyplot packages as follows. For the last, I will also 
+specify the command inline to obtain all graphs in the same document as the text and code. Finally, I specify the seed to assure the 
+comparability between my results and the ones of the Udacity tutors and other students.
+
+#These lines of code import all of the packages necessary for the analyses that follow.
+import pandas as pd
+import numpy as np
+import random
+import statsmodels.api as sm from scipy.stats 
+import norm 
+import matplotlib.pyplot as plt
+#Here, I set matplotlib inline to be sure that any graph will be shown in the same document as the code and text.
+%matplotlib inline
+#This line sets the seed to assure comparability between my results and the answers of the Udacity tutors/students.
+random.seed(42)
+
+With the right environment settled, I can load the data and store them into a dataframe called df. Then, I have a look at the initial five 
+rows of this df as follows:
+
+#These code line reads the dataset given and store it into the dataframe df. 
+df = pd.read_csv('ab_data.csv')
+#Here, the head function is used to look at the initial five rows of the dataframe.
+df.head()
+
+The newly created dataframe includes five columns. The first stores the id of the users that landed on the webpage during the experiment. 
+The second is associated to the time, including the date and the actual time of the event. The third determines if the id is associated to 
+the control or the treatment (experiment) group. The fourth column states if the user lands on the new or old webpage. The final column 
+includes 1s when a conversion is done and 0s otherwise. After exploring the first five rows of the newly created df, I estimate its total 
+row amount using the function shape.
+
+#The funtion shape is used to find the df dimension. Selecting only the first value [0], I obtain the rows.
+df.shape[0]
+
+At this stage, the dataframe requires cleaning. So, to start with it I look at the amount of unique user ids by combining the functions 
+unique and shape.
+
+#This code line uses the function shape together with the function unique to quantify the unique values of user ids.
+df['user_id'].unique().shape[0]
+
+Then, I perform a preliminary analysis by looking at the proportion of conversions in the entire dataset. This is achievable by summing the 
+values in the converted column, as they include one when the conversion is done and zero otherwise. The result is divided by the total 
+amount of df rows.
+
+#This code line divides the amount of people that convert by the amount of people to find the associated proportion.
+df['converted'].sum() / df.shape[0]
+
+So, the proportion of conversions in the entire dataframe is approximately 12%, regardless of the webpage visited. However, the fraction of 
+this value that depends on the new or old webpages may be influenced by the possibility that the df erroneously store control ids that land 
+on the new webpage and/or treatment ids that land on the old webpage. To account for this eventuality, I group the df by the 'group' 
+categories and estimate how many of those are associated with the new and the old webpages.
+
+"""These code lines generate two dummy variables out of the 'landing_page' column to explore the association between them and the groups 
+(control, treatment). The cases where the control group ends on the new webpage and the treatment group ends on the old webpage are 
+considered cases where the 'landing _page' and 'group' do not line up.
+"""
+df[['new_page', 'old_page']] = pd.get_dummies(df['landing_page']) df.groupby(['group']).sum()
+
+The number of events when the new_page and treatment do not line up is obtained summing the rows where the control group ends on the 
+new_page and the ones where the treatment group ends on the old_page. This means 3893 rows are erroneously stored and should be removed.
+In addition to the misaligned rows, it is also important to identify and deal with missing values. This is done using the function info.
+
+#This code line explores the existence of missing values by looking at the amount of non-null items by using info.
+df.info()
+
+My analysis shows that none of the df rows include missing values, so no actions are taken in this regard.
+Coming back to the rows where the group and page are misaligned, I isolate only the right rows and create a new dataframe named 'df2' that 
+includes them. This is coded and checked in the following boxes.
+
+"""These code lines aim to remove the dataframe rows where the 'new_page' and 'treatment' don't line up. To reach this objective, I firstly 
+select the rows where the 'landing_page' corresponds to the 'new_page' and, from them, the ones where the 'group' corresponds to 
+'treatment'. I store the results into the df2_1 dataframe.
+"""
+df2_1 = df[df['landing_page'] == 'new_page']
+df2_1 = df2_1[df2_1['group'] == 'treatment']
+#Then, I do the same for the 'old_page' and the 'control' group.
+df2_2 = df[df['landing_page'] == 'old_page']
+df2_2 = df2_2[df2_2['group'] == 'control']
+#The final results are combined within the dataframe df2.
+df2 = pd.concat([df2_1,df2_2],axis=0)
+
+#Double Check all of the correct rows were removed from df2 - this should be 0. 
+df2[((df2['group'] == 'treatment') == (df2['landing_page'] == 'new_page')) == False].shape[0]
+
+At this stage, I explore the potential presence of duplicate in the newly created dataframe. Comparing the df2 shape with the same value 
+forced to include only the unique ids does this. The associated code lines are in the next two boxes.
+
+#In order to evaluate the presence of duplicates in the id columns, I firstly e stimate the length of the df2...
+df2['user_id'].shape[0] 
+#... and then the unique user ids are found by combining the functions unique and shape.
+df2['user_id'].unique().shape[0]
+
+From the analyses done in the previous two cells, it appears that one id is duplicated in my dataset. To identify its value, I will combine 
+the functions duplicated, loc, and iloc as it follows.
+
+#These code lines identify the duplicated user id generating a new column that includes true where id is duplicated.
+df2['id_is_duplicated'] = df2.duplicated(['user_id'])
+#And printing the user id associated with the row where the duplication check is true (or 1).
+df2.loc[df2['id_is_duplicated'] == 1, 'user_id'].iloc[0]
+
+Results show that the id 773192 is duplicated in my dataset. The associated data are extrapolated by using the following code line.
+
+#As in the previous box, I print the row corresponding to the true value (1) of the duplication check.
+df2[df2['id_is_duplicated'] == 1]
+
+After having identified the presence of one duplicate and explored the associated info, I remove this row from my df and drop the column 
+named id_is_duplicated as it now contains only 'False' Booleans.
+
+#Then I remove the duplicated line and the column of duplication check as they are not necessary.
+df2 = df2[df2['id_is_duplicated'] == 0]
+df2 = df2.drop(['id_is_duplicated'],axis=1)
+
+Having concluded the dataframe cleaning steps, I can now estimate the probabilities of obtain a conversion given the entire dataframe, 
+isolating only the ids in the 'control', and the ones in the 'treatment' groups. Results are given in the following boxes and estimate 
+values of 0.1196, 0.1204, and 0.1188, respectively.
+
+#This line calculates the probability of converting as the division between the conversion and total amounts.
+df2['converted'].sum() / df2.shape[0]
+#Here, I do the same as in the previous cell, but selecting only the people that are in the 'control' group.
+(df2.loc[df2['group'] == 'control', 'converted'].sum()) / (df2.loc[df2['group'] == 'control', 'converted'].shape[0])
+#Here, I do the same as in the previous cells, but selecting only the people that are in the 'treatment' group.
+(df2.loc[df2['group'] == 'treatment', 'converted'].sum()) / (df2.loc[df2['group'] == 'treatment', 'converted'].shape[0])
+
+Lastly in this section, I quantify the probability that an individual lands on the new webpage. This value is of key relevance for the 
+analysis: if the number of people that land on one page is significantly different from the ones that land on the other webpage, the 
+resulting probabilities should be weighted before being compared.
+
+"""Here, I quantify the probability that an individual lands on the new webpage dividing the amoount of people that lands on the new 
+webpage by the total amount of people.
+"""
+df2_new_page = df2.loc[df2['landing_page'] == 'new_page']
+df2_new_page.shape[0] / 290584
+
+Overall, the analyses done in the last four boxes show that the probability of obtaining a conversion is higher using the old webpage in 
+the 'control' group than releasing the new webpage to the 'treatment' customers. This conclusion is not biased by the amount of people in 
+the two groups because each of them stores roughly 50% of the chosen sample. However, it must be noted that the difference between the two 
+probabilities obtained is only 0.0016 and that this value may lie within the confidence interval around the average of 0.1196. So, there 
+are no evidences so far of an improvement (more conversions) associated with the use of the new webpage.
+
+3.A/B Test
+
+In the previous section, I have analyzed the effectiveness of the launch of a new website for an e-commerce by using probability estimates. 
+Results showed that the new website is ineffective on the amount of conversions if not decreases them with respect to the old webpage. To 
+deepen the analysis, I apply an A/B test in this section. The use of this technique is possible in my case as I can hypothesize that the 
+test was continuous as each observation was observed. However, some questions arise: when should one stop the study to consider a webpage 
+significantly better than the other? Does the analysis need to be consistent for a certain amount of time? How long should one runs the 
+study to render a decision that neither page is better than another? These questions are difficult challenges associated with A/B tests in 
+general.
+Notwithstanding that, I apply an A/B test in this occasion. I start by separating a null (H0) and alternative (H1) hypotheses. Owing to the 
+fact that I am trying to test if the new webpage is better than the old one, I assume that the opposite is true before the study. So, the 
+null hypothesis states that the probability (p) of increasing the conversions using the new webpage is equal or lower than the one 
+associated to the old webpage. The alternative hypothesis must be that the probability associated with the new webpage is higher than the 
+old webpage counterpart. A summary of both is shown in the following lines.
+
+H0: pold - pnew ≥ 0 
+H1: pold - pnew < 0
+
+If one assumes that the probabilities associated with the old and new webpages are equal, under the null hypothesis, they are quantifiable 
+as the proportion of conversion in the entire dataframe. If so, they are equal to 0.1196, as it is shown in the following box.
+
+#Here, I calculate the convert rate for the new page as the amount of conversions divided by the amount of people.
+df2['converted'].sum() / df2.shape[0]
+
+#By hypothesis, the conversion rates for the old and new webpages are equal one another and equal to the p values.
+df2['converted'].sum() / df2.shape[0]
+
+As anticipated in section 1, the number of people associated with one group or the other is of key relevance as it can lead to biases in 
+the final results. So, I estimate the amount of ids (n) in the 'treatment' and 'control' groups. Results quantify 145,310 and 145,274, 
+respectively. These values are comparable and so it is possible to neglect associated biases.
+
+#Having already selected the dataframe rows associated to the new webpage, I de termine their amount by using shape.
+df2_new_page.shape[0]
+#By difference, I can also determine the amount of dataframe rows (and ids) associated to the old webpage.
+df2.shape[0] - df2_new_page.shape[0]
+
+At this stage, I can simulate a random array of 1s and 0s for the new and old webpages within which the 1s represent a conversion and the 
+0s an absence of it. These new arrays are coded in the following two boxes.
+
+"""Having calculated the values of n and p for the new webpage, I can now simulate an additional amount of transactions for the same 
+webpage during which 0 identifies an absence of conversion and 1 a presence of it.
+"""
+new_page_converted = np.random.choice([0,1],df2_new_page.shape[0], p=(0.1196,1-0.1196))
+
+#The same as in the previous cell can be done for the old webpage values.
+old_page_converted = np.random.choice([0,1],df2.shape[0] - df2_new_page.shape[0], p=(0.1196,1-0.1196))
+
+Having modeled the amounts of conversion associated to the new and old webpages, it is possible to estimate the difference between the 
+means of these arrays. This quantifies the change in probability of increasing the e-commerce profit with one webpage or the other.
+
+#Then, I could estimate the difference between the randomly simulated probabilities as follows.
+new_page_converted.mean() - old_page_converted.mean()
+
+I can now apply a bootstrapping technique on the simulated difference in probability. This leads to the most probable distribution of 
+probability differences and can be used to estimate the p value associated with my results. I use 10,000 repetitions for the bootstrapping 
+application.
+
+"""Having now calculated the random probabilities of obtaining a conversion when landing on the new and old webpages, I bootstrap the 
+resulting difference in p using 10000 repetitions, a sample of the df2 dataframe, and storing the results in p_diffs as follows.
+"""
+p_diffs = []
+df2 = df2.drop(['new_page', 'old_page'],axis=1) for _ in range(10000):
+my_sample = df2.sample(df2.shape[0], replace = True)
+    new_page_converted = np.random.choice([0,1],my_sample.loc[my_sample['landing_page'] == 'new_page'].shape[0], p=(0.1196,1-0.1196))
+    old_page_converted = np.random.choice([0,1],my_sample.shape[0] - my_sample.loc[my_sample['landing_page'] == 'new_page'].shape[0], 
+    p=(0.1196,1-0.1196))
+    p_diffs.append(new_page_converted.mean() - old_page_converted.mean())
+#This code line converts the newly created p_diffs into a numpy array, which is more efficient for my calculation.
+p_diffs = np.array(p_diffs)
+
+After having bootstrapped the probability difference, I plot the results and superimpose the value associated with the observed p change 
+(-0.0016).
+
+#The following code line plot the p_diffs distribution as an histogram, defining the associated color.
+plt.hist(p_diffs, color='c', edgecolor='k', alpha=0.65);
+#This code line add to the following plot a dashed vertical line at the observed difference in probabilities.
+plt.axvline(-0.0016, color='k', linestyle='dashed', linewidth=1);
+
+As expected, the resulting distribution is approximately normal distributed and centered on zero. This is due to the fact that I am working 
+under the null hypothesis that states an absence of differences between the conversions obtained with one webpage or the other and so a 
+difference in probability equals to zero. From it, I can determine the fraction of values in the distributions that are higher than the 
+observed change and the p value associated to my results. The last is approximately equal to 0.90.
+
+#This code line quantifies the average fraction of simulated differences in p higher than the actual observation
+(p_diffs > -0.00158).mean()
+
+After having specified my null and alternative hypotheses, I could test their validities and determine if the former could or could not be 
+rejected. To reach this conclusion, I adopt the commonly used threshold of 0.05 and determine if my p value is higher or lower than it. The 
+p value is determined as in the previous box and resulted to be higher than 0.05. This means that I cannot reject the null hypothesis and, 
+therefore, I cannot state with a confidence equal or higher than 95% that the new webpage leads to more conversions than the old one.
+Under a technical aspect, results similar to the ones just obtained can be reached by using a more efficient code. This is summarized in 
+the following boxes.
+
+#Here, I replicate the estimate of the conversion proportions and total values for the old and new webpages.
+convert_new = df2.query("landing_page == 'new_page' and converted == 1").shape[0]
+convert_old = df2.query("landing_page == 'old_page' and converted == 1").shape[0]
+n_new = df2.query("landing_page == 'new_page'").shape[0]
+n_old = df2.query("landing_page == 'old_page'").shape[0]
+
+#As in the previous box, I estimate the z score and p value of my analysis in a more efficient way.
+z_score, p_value = sm.stats.proportions_ztest([convert_new, convert_old], [n_new, n_old], alternative = 'larger')
+print(z_score, p_value)
+
+#Here, I quantify the reference for the z score in a more efficient way. I use the treshold of 95%.
+norm.cdf((1-(0.05/2)))
+
+The results obtained using the last approach do not allow to reject the null hypothesis, being the estimated absolute value of z score 
+(1.31) in the range of the reference (0.84). However, this finding is associated with a p value of 0.91, suggesting that it is almost 
+certain to obtain a Type I error. So, I conclude saying that this analysis agrees with the one discussed before in this document: high p 
+values do not allow us to reliably conclude if one webpage leads to more conversions than the other. Probably, a longer experiment could 
+overcome this challenge.
+
+4.Regression
+
+In the previous sections, I apply a probability based analysis and an A/B test to highlight if the use of a new webpage increases the 
+conversions for an e-commerce or not. Results showed high p values, hence suggesting that no conclusions can be reliably drawn and probably 
+a longer experiment is required. In this section, I further explore the e-commerce challenge by applying a regression analysis. As my 
+output of interest is a categorical variable (conversion values are either 1s or 0s), I will apply a series of logistic regressions in the 
+following cells.
+
+To prepare my dataframe for the regression, I create a dummy variable out of the 'group' column, which includes 1s when the user lands on 
+the new webpage.
+
+#These code lines create a dummy variable column for each of the 'group' categories...
+df2[['dummy1', 'ab_page']] = pd.get_dummies(df2['group'])
+# ... then drop the one that includes 1s when the user is in the 'control' group...
+df2 = df2.drop(['dummy1'],axis=1)
+#... and finally create a column for the intercept of the following regression models.
+df2['intercept'] = 1
+
+With the dataframe ready for the analysis, I can apply a logistic regression that uses the intercept and the newly created ab_page variable 
+to infer if a conversion happens or not. Note that the results of the model are called with the summary2 function owing to the compiler 
+version used here. If this step creates errors or warnings, please replace the summary2 function with summary.
+
+#Here, I define and run a logistic regression based on the intercept and 'ab_page' variables
+logit_mod = sm.Logit(df2['converted'], df2[['intercept', 'ab_page']]) results_log_reg = logit_mod.fit()
+#Note that the regression results are called by using the function summary2. This is due to the compiler version.
+print(results_log_reg.summary2())
+
+The p value associated to the ab_page values in the logistic regression is 0.19. This value differs significantly from the ones obtained in 
+the previous sections. The main reason behind this effect is the change in the hypotheses that lie behind the analyses. In sections 2 and 
+3, my null hypothesis states that the conversion amount obtained with the new webpage would have been the same or lowers than the old 
+webpage counterpart. Here, I assume as null hypothesis that there is no difference between the treated and untreated groups.
+
+The p value and the associated interpretation of the results may vary further when considering additional variables. This approach may be 
+helpful as allows raising the reliability of our results. However, it could also increase the difficulty of the analysis interpretation, so 
+its application should be done carefully.
+
+Having tested the influence of the webpage on the amount of conversion, I am interested on exploring if the country from when the visit to 
+the webpage is done has an influence. To do so, I load the new dataset in a new dataframe named 'countries_df', concatenate it with the old 
+df2, and create the necessary dummy variables for the three countries in the dataset. Then, I run the new logistic regressions.
+
+#These code lines load the country dataset and join it with the old df2 dataframe.
+countries_df = pd.read_csv('./countries.csv')
+df_new = countries_df.set_index('user_id').join(df2.set_index('user_id'), how=' inner')
+
+#Here, I create the necessary dummy variables for the three countries in the dataframe.
+df_new[['CA', 'UK', 'US']] = pd.get_dummies(df_new['country'])
+
+#Then, I define and run the new logistic regression. The use of the 'UK' variable is avoided as it creates challenges.
+logit_mod = sm.Logit(df_new['converted'], df_new[['intercept', 'ab_page','CA', 'US']])
+results_log_reg = logit_mod.fit()
+print(results_log_reg.summary2())
+
+After adding the California (CA) and US column values to the logistic regression, it appears that landing on the webpage from California 
+changes the conversion amount. More in details, when people land on the web page from California, they decrease the odds of having a 
+conversion by 1.05 (exp(0.0506)). The p value associated with the US column shows that its effect is not statistically different from zero. 
+By adding the UK values, the program fails to converge the Maximum Likelihood Optimization and none of the country seems to have an effect.
+
+Finally, I would like to explore the influence of potential interactions between the webpage and the country chosen. This can be coded by 
+using the products among these variables, as it is shown in the next boxes.
+
+#These code lines add to the dataframe the interactive effects among 'ab_page' and 'CA', and 'ab_page' and 'US'.
+df_new['ab_country_I_CA'] = df_new['ab_page']*df_new['CA']
+df_new['ab_country_I_US'] = df_new['ab_page']*df_new['US']
+
+#Here, I run again the regression model adding the interactive effect, but keeping also the associated single ones.
+logit_mod = sm.Logit(df_new['converted'], df_new[['intercept', 'ab_page','CA', 'US', 'ab_country_I_CA', 'ab_country_I_US']])
+results_log_reg = logit_mod.fit()
+print(results_log_reg.summary2())
+
+As potentially expected from the previous analysis, only the interaction between the CA and the ab_page values is influential on the amount 
+of conversion, while the US effect is not reliably different from zero both singularly and interactively. I notice however that the 
+coefficient of the US influence changes in sign in between the two regressions and that the p value associated to the interactive influence 
+of US and the ab_page is significantly lower than the former single effect.
+
+5.Conclusions
+
+To sum up, the study of the effectiveness of new webpages, drugs, or environmental actions can be explored with different approaches. Here, 
+I analyze the use of probability estimates, A/B tests, and regression analyses to identify if a new webpage increases the conversions 
+(money transactions) for an e-commerce.
+
+The calculation of the probabilities associated with the use of the new and old webpages reveal that the last may have been more efficient 
+during the experiment, but the associated p value highlight an impossibility of reliable conclusions. Potentially, a longer experiment 
+would have led to more reliable results.
+
+The A/B test performed here agrees with the probability estimates. In this occasion, the null hypothesis underlies that the effect of the 
+new webpage is equal or less efficient than the old webpage one. The test results do not allow for a rejection of this hypothesis, but the 
+associated p value highlight a very strong probability of Type I errors.
+
+The results obtained from the regression analyses are slightly different. Here, I assume that there is no difference between the use of one 
+webpage or the other under the null hypothesis. So, the effects found in the logistic regressions quantify the influence of single 
+variables on the conversion amounts but do not necessarily compare with the previous conclusions.
+
+Notwithstanding the statistical conclusions appear weak and often not reliable, these should not be the end point of the analysis. Under a 
+practical perspective, there are enough evidences in this study to say that the new webpage does not change the amount of conversions and 
+so additional analyses may not be fruitful. This is particularly true if the mentioned studies would be too expensive or too challenging to 
+be realized.

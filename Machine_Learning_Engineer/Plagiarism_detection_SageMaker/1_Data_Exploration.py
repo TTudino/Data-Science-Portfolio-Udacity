@@ -21,33 +21,21 @@
 # 
 # > **Citation for data**: Clough, P. and Stevenson, M. Developing A Corpus of Plagiarised Short Answers, Language Resources and Evaluation: Special Issue on Plagiarism and Authorship Analysis, In Press. [Download]
 
-# In[1]:
-
-
 get_ipython().system('wget https://s3.amazonaws.com/video.udacity-data.com/topher/2019/January/5c4147f9_data/data.zip')
 get_ipython().system('unzip data')
-
-
-# In[2]:
-
 
 # import libraries
 import pandas as pd
 import numpy as np
 import os
 
-
 # This plagiarism dataset is made of multiple text files; each of these files has characteristics that are is summarized in a `.csv` file named `file_information.csv`, which we can read in using `pandas`.
-
-# In[3]:
-
 
 csv_file = 'data/file_information.csv'
 plagiarism_df = pd.read_csv(csv_file)
 
 # print out the first few rows of data info
 plagiarism_df.head(10)
-
 
 # ## Types of Plagiarism
 # 
@@ -73,15 +61,11 @@ plagiarism_df.head(10)
 # 
 # In the next cell, print out some statistics about the data.
 
-# In[4]:
-
-
 # print out some stats about the data
 print('Number of files: ', plagiarism_df.shape[0])  # .shape[0] gives the rows 
 # .unique() gives unique items in a specified column
 print('Number of unique tasks/question types (A-E): ', (len(plagiarism_df['Task'].unique())))
 print('Unique plagiarism categories: ', (plagiarism_df['Category'].unique()))
-
 
 # You should see the number of text files in the dataset as well as some characteristics about the `Task` and `Category` columns. **Note that the file count of 100 *includes* the 5 _original_ wikipedia files for tasks A-E.** If you take a look at the files in the `data` directory, you'll notice that the original, source texts start with the filename `orig_` as opposed to `g` for "group." 
 # 
@@ -96,9 +80,6 @@ print('Unique plagiarism categories: ', (plagiarism_df['Category'].unique()))
 # Below, you should notice two things:
 # * Our dataset is quite small, especially with respect to examples of varying plagiarism levels.
 # * The data is distributed fairly evenly across task and plagiarism types.
-
-# In[5]:
-
 
 # Show counts by different tasks and amounts of plagiarism
 
@@ -117,13 +98,9 @@ counts_task_and_plagiarism=plagiarism_df.groupby(['Task', 'Category']).size().re
 print("\nTask & Plagiarism Level Combos :")
 display(counts_task_and_plagiarism)
 
-
 # It may also be helpful to look at this last DataFrame, graphically.
 # 
 # Below, you can see that the counts follow a pattern broken down by task. Each task has one source text (original) and the highest number on `non` plagiarized cases.
-
-# In[6]:
-
 
 import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -138,6 +115,4 @@ plt.bar(range(len(counts)), counts['Counts'], color = 'blue')
 
 # ## Up Next
 # 
-# This notebook is just about data loading and exploration, and you do not need to include it in your final project submission. 
-# 
-# In the next few notebooks, you'll use this data to train a complete plagiarism classifier. You'll be tasked with extracting meaningful features from the text data, reading in answers to different tasks and comparing them to the original Wikipedia source text. You'll engineer similarity features that will help identify cases of plagiarism. Then, you'll use these features to train and deploy a classification model in a SageMaker notebook instance. 
+# This notebook is just about data loading and exploration. In the next two, models and predictions will be also explored

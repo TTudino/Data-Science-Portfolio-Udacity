@@ -31,9 +31,6 @@
 # 
 # > **Citation for data**: Clough, P. and Stevenson, M. Developing A Corpus of Plagiarised Short Answers, Language Resources and Evaluation: Special Issue on Plagiarism and Authorship Analysis, In Press. [Download]
 
-# In[ ]:
-
-
 # NOTE:
 # you only need to run this cell if you have not yet downloaded the data
 # otherwise you may skip this cell or comment it out
@@ -41,27 +38,18 @@
 get_ipython().system('wget https://s3.amazonaws.com/video.udacity-data.com/topher/2019/January/5c4147f9_data/data.zip')
 get_ipython().system('unzip data')
 
-
-# In[1]:
-
-
 # import libraries
 import pandas as pd
 import numpy as np
 import os
 
-
 # This plagiarism dataset is made of multiple text files; each of these files has characteristics that are is summarized in a `.csv` file named `file_information.csv`, which we can read in using `pandas`.
-
-# In[2]:
-
 
 csv_file = 'data/file_information.csv'
 plagiarism_df = pd.read_csv(csv_file)
 
 # print out the first few rows of data info
 plagiarism_df.head()
-
 
 # ## Types of Plagiarism
 # 
@@ -124,9 +112,6 @@ plagiarism_df.head()
 # 
 # ```
 
-# In[3]:
-
-
 # Read in a csv file and return a transformed dataframe
 def numerical_dataframe(csv_file='data/file_information.csv'):
     '''Reads in a csv file which is assumed to have `File`, `Category` and `Task` columns.
@@ -144,7 +129,6 @@ def numerical_dataframe(csv_file='data/file_information.csv'):
     
     return original_data
 
-
 # ### Test cells
 # 
 # Below are a couple of test cells. The first is an informal test where you can check that your code is working as expected by calling your function and printing out the returned result.
@@ -157,9 +141,6 @@ def numerical_dataframe(csv_file='data/file_information.csv'):
 # 
 # These tests do not test all cases, but they are a great way to check that you are on the right track!
 
-# In[4]:
-
-
 # informal testing, print out the results of a called function
 # create new `transformed_df`
 transformed_df = numerical_dataframe(csv_file ='data/file_information.csv')
@@ -167,10 +148,6 @@ transformed_df = numerical_dataframe(csv_file ='data/file_information.csv')
 # check work
 # check that all categories of plagiarism have a class label = 1
 transformed_df.head(10)
-
-
-# In[5]:
-
 
 # test cell that creates `transformed_df`, if tests are passed
 
@@ -205,9 +182,6 @@ transformed_df.head()
 # 
 # Run the cells below to get a `complete_df` that has all the information you need to proceed with plagiarism detection and feature engineering.
 
-# In[6]:
-
-
 """
 DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
 """
@@ -217,10 +191,6 @@ import helpers
 text_df = helpers.create_text_column(transformed_df)
 text_df.head()
 
-
-# In[7]:
-
-
 # after running the cell above
 # check out the processed text for a single file, by row index
 row_idx = 0 # feel free to change this index
@@ -228,7 +198,6 @@ row_idx = 0 # feel free to change this index
 sample_text = text_df.iloc[0]['Text']
 
 print('Sample processed text:\n\n', sample_text)
-
 
 # ## Split data into training and test sets
 # 
@@ -243,14 +212,8 @@ print('Sample processed text:\n\n', sample_text)
 # 
 # The function **train_test_dataframe** takes in a DataFrame that it assumes has `Task` and `Category` columns, and, returns a modified frame that indicates which `Datatype` (train, test, or orig) a file falls into. This sampling will change slightly based on a passed in *random_seed*. Due to a small sample size, this stratified random sampling will provide more stable results for a binary plagiarism classifier. Stability here is smaller *variance* in the accuracy of classifier, given a random seed.
 
-# In[8]:
-
-
 random_seed = 1 # can change; set for reproducibility
 
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 import helpers
 
 # create new df with Datatype (train, test, orig) column
@@ -315,9 +278,6 @@ complete_df.head(10)
 # 
 # You are encouraged to write any helper functions that you need to complete the function below.
 
-# In[9]:
-
-
 from sklearn.feature_extraction.text import CountVectorizer
 # Calculate the ngram containment for one answer file/source file pair in a df
 def calculate_containment(df, n, answer_filename):
@@ -353,7 +313,6 @@ def calculate_containment(df, n, answer_filename):
     
     return containment
 
-
 # ### Test cells
 # 
 # After you've implemented the containment function, you can test out its behavior. 
@@ -363,9 +322,6 @@ def calculate_containment(df, n, answer_filename):
 # >If you've implemented this correctly, you should see that the non-plagiarized have low or close to 0 containment values and that plagiarized examples have higher containment values, closer to 1.
 # 
 # Note what happens when you change the value of n. I recommend applying your code to multiple files and comparing the resultant containment values. You should see that the highest containment values correspond to files with the highest category (`cut`) of plagiarism level.
-
-# In[10]:
-
 
 # select a value for n
 n = 3
@@ -389,14 +345,7 @@ print('Original category values: \n', category_vals)
 print()
 print(str(n)+'-gram containment values: \n', containment_vals)
 
-
-# In[11]:
-
-
 # run this test cell
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 # test containment calculation
 # params: complete_df from before, and containment function
 tests.test_containment(complete_df, calculate_containment)
@@ -489,9 +438,6 @@ tests.test_containment(complete_df, calculate_containment)
 # 
 # This matrix treatment can be applied to a set of words instead of letters. Your function should apply this to the words in two texts and return the normalized LCS value.
 
-# In[12]:
-
-
 # Compute the normalized LCS given an answer text and a source text
 def lcs_norm_word(answer_text, source_text):
     '''Computes the longest common subsequence of words in two texts; returns a normalized value.
@@ -518,16 +464,12 @@ def lcs_norm_word(answer_text, source_text):
     
     return mat[-1][-1]  / length_answer
 
-
 # ### Test cells
 # 
 # Let's start by testing out your code on the example given in the initial description.
 # 
 # In the below cell, we have specified strings A (answer text) and S (original source text). We know that these texts have 20 words in common and the submitted answer is 27 words long, so the normalized, longest common subsequence should be 20/27.
 # 
-
-# In[13]:
-
 
 # Run the test scenario from above
 # does your function return the expected value?
@@ -539,31 +481,19 @@ S = "pagerank is a link analysis algorithm used by the google internet search en
 lcs = lcs_norm_word(A, S)
 print('LCS = ', lcs)
 
-
 # expected value test
 assert lcs==20/27., "Incorrect LCS value, expected about 0.7408, got "+str(lcs)
 
 print('Test passed!')
 
-
 # This next cell runs a more rigorous test.
 
-# In[14]:
-
-
 # run test cell
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 # test lcs implementation
 # params: complete_df from before, and lcs_norm_word function
 tests.test_lcs(complete_df, lcs_norm_word)
 
-
 # Finally, take a look at a few resultant values for `lcs_norm_word`. Just like before, you should see that higher values correspond to higher levels of plagiarism.
-
-# In[15]:
-
 
 # test on your own
 test_indices = range(5) # look at first few files
@@ -590,7 +520,6 @@ print('Original category values: \n', category_vals)
 print()
 print('Normalized LCS values: \n', lcs_norm_vals)
 
-
 # ---
 # # Create All Features
 # 
@@ -606,12 +535,6 @@ print('Normalized LCS values: \n', lcs_norm_vals)
 # 
 # This function gives you the ability to easily create several containment features, of different n-gram lengths, for each of our text files.
 
-# In[16]:
-
-
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 # Function returns a list of containment features, calculated for a given n 
 # Should return a list of length 100 for all files in a complete_df
 def create_containment_features(df, n, column_name=None):
@@ -641,12 +564,6 @@ def create_containment_features(df, n, column_name=None):
 # Below, your complete `lcs_norm_word` function is used to create a list of LCS features for all the answer files in a given DataFrame (again, this assumes you are passing in the `complete_df`. It assigns a special value for our original, source files, -1.
 # 
 
-# In[17]:
-
-
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 # Function creates lcs feature and add it to the dataframe
 def create_lcs_features(df, column_name='lcs_word'):
     
@@ -673,8 +590,6 @@ def create_lcs_features(df, column_name='lcs_word'):
 
     print('LCS features created!')
     return lcs_values
-    
-
 
 # ## EXERCISE: Create a features DataFrame by selecting an `ngram_range`
 # 
@@ -685,17 +600,10 @@ def create_lcs_features(df, column_name='lcs_word'):
 # 
 # In the below cell **define an n-gram range**; these will be the n's you use to create n-gram containment features. The rest of the feature creation code is provided.
 
-# In[18]:
-
-
 # Define an ngram range
 ngram_range = range(1,7)
 
-
 # The following code may take a minute to run, depending on your ngram_range
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 features_list = []
 
 # Create features in a features_df
@@ -722,10 +630,6 @@ print()
 print('Features: ', features_list)
 print()
 
-
-# In[19]:
-
-
 # print some results 
 features_df.head(10)
 
@@ -738,18 +642,11 @@ features_df.head(10)
 # 
 # So, you'll want to choose your features based on which pairings have the lowest correlation. These correlation values range between 0 and 1; from low to high correlation, and are displayed in a [correlation matrix](https://www.displayr.com/what-is-a-correlation-matrix/), below.
 
-# In[20]:
-
-
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 # Create correlation matrix for just Features to determine different models to test
 corr_matrix = features_df.corr().abs().round(2)
 
 # display shows all of a dataframe
 display(corr_matrix)
-
 
 # ## EXERCISE: Create selected train/test data
 # 
@@ -767,9 +664,6 @@ display(corr_matrix)
 # Looking at the above correlation matrix, you should decide on a **cutoff** correlation value, less than 1.0, to determine which sets of features are *too* highly-correlated to be included in the final training and test data. If you cannot find features that are less correlated than some cutoff value, it is suggested that you increase the number of features (longer n-grams) to choose from or use *only one or two* features in your final model to avoid introducing highly-correlated features.
 # 
 # Recall that the `complete_df` has a `Datatype` column that indicates whether data should be `train` or `test` data; this should help you split the data appropriately.
-
-# In[21]:
-
 
 # Takes in dataframes and a list of selected features (column names) 
 # and returns (train_x, train_y), (test_x, test_y)
@@ -804,12 +698,6 @@ def train_test_data(complete_df, features_df, selected_features):
 # 
 # Below, test out your implementation and create the final train/test data.
 
-# In[22]:
-
-
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 test_selection = list(features_df)[:2] # first couple columns as a test
 # test that the correct train/test data is created
 (train_x, train_y), (test_x, test_y) = train_test_data(complete_df, features_df, test_selection)
@@ -824,17 +712,9 @@ tests.test_data_split(train_x, train_y, test_x, test_y)
 # 
 # Define a list of features you'd like to include in your final mode, `selected_features`; this is a list of the features names you want to include.
 
-# In[23]:
-
-
 # Select your list of features, this should be column names from features_df
 # ex. ['c_1', 'lcs_word']
 selected_features = ['c_1', 'c_5', 'lcs_word']
-
-
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 
 (train_x, train_y), (test_x, test_y) = train_test_data(complete_df, features_df, selected_features)
 
@@ -869,9 +749,6 @@ print('Training df sample: \n', train_x[:10])
 # 
 # It may be useful to use pandas to merge your features and labels into one DataFrame and then convert that into a csv file. You can make sure to get rid of any incomplete rows, in a DataFrame, by using `dropna`.
 
-# In[24]:
-
-
 def make_csv(x, y, filename, data_dir):
     '''Merges features and labels and converts them into one csv file with labels in the first column.
        :param x: Data features
@@ -896,12 +773,6 @@ def make_csv(x, y, filename, data_dir):
 # 
 # Test that your code produces the correct format for a `.csv` file, given some text features and labels.
 
-# In[25]:
-
-
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
 fake_x = [ [0.39814815, 0.0001, 0.19178082], 
            [0.86936937, 0.44954128, 0.84649123], 
            [0.44086022, 0., 0.22395833] ]
@@ -919,30 +790,13 @@ assert fake_df.shape==(3, 4),       'The file should have as many rows as data_p
 assert np.all(fake_df.iloc[:,0].values==fake_y), 'First column is not equal to the labels, fake_y.'
 print('Tests passed!')
 
-
-# In[26]:
-
-
 # delete the test csv file, generated above
 get_ipython().system(' rm -rf test_csv')
 
 
 # If you've passed the tests above, run the following cell to create `train.csv` and `test.csv` files in a directory that you specify! This will save the data in a local directory. Remember the name of this directory because you will reference it again when uploading this data to S3.
 
-# In[27]:
-
-
 # can change directory, if you want
 data_dir = 'plagiarism_data'
-
-"""
-DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
-"""
-
 make_csv(train_x, train_y, filename='train.csv', data_dir=data_dir)
 make_csv(test_x, test_y, filename='test.csv', data_dir=data_dir)
-
-
-# ## Up Next
-# 
-# Now that you've done some feature engineering and created some training and test data, you are ready to train and deploy a plagiarism classification model. The next notebook will utilize SageMaker resources to train and test a model that you design.
